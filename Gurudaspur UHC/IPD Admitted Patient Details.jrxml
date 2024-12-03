@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.0.final using JasperReports Library version 6.21.0-4f56c4f36cd19e17675219a9ac4692d5f0f13b06  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="IPD Admitted Patient Details" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="dcb2887b-d429-4fde-ab24-144f3d9b3e97">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="SHR-Project"/>
+	<property name="ireport.jasperserver.url" value="http://192.168.1.220:8080/jasperserver/"/>
+	<property name="ireport.jasperserver.user" value="ctech"/>
+	<property name="ireport.jasperserver.report.resource" value="/SHR_Project_Report/Gurudaspur_UHC/IPD_Admitted_Patient_Details_files/main_jrxml"/>
+	<property name="ireport.jasperserver.reportUnit" value="/SHR_Project_Report/Gurudaspur_UHC/IPD_Admitted_Patient_Details"/>
+	<parameter name="StartDate" class="java.sql.Timestamp"/>
+	<parameter name="EndDate" class="java.sql.Timestamp"/>
+	<queryString language="SQL">
+		<![CDATA[SELECT bpatient.date_started                 AS 'Admission Time',
+       pid.identifier                        AS 'Patient ID',
+       CONCAT(
+               IF(pn.given_name IS NULL, '', CONCAT((pn.given_name), ' ')),
+               IF(pn.middle_name IS NULL, '', CONCAT((pn.middle_name), ' ')),
+               IF(pn.family_name IS NULL, '', CONCAT((pn.family_name), ' '))
+           )                                 AS 'Patient Name',
+       p.gender                              AS 'Gender',
+       CONCAT(
+               IF(TIMESTAMPDIFF(YEAR, p.birthdate, CURRENT_DATE()) = 0, '',
+                  CONCAT(TIMESTAMPDIFF(YEAR, p.birthdate, CURRENT_DATE()), ' Y ')),
+               IF((TIMESTAMPDIFF(MONTH, p.birthdate, CURRENT_DATE()) % 12) = 0, '',
+                  CONCAT((TIMESTAMPDIFF(MONTH, p.birthdate, CURRENT_DATE()) % 12), ' M ')),
+               IF((FLOOR(TIMESTAMPDIFF(DAY, p.birthdate, CURRENT_DATE()) % 30.4375)) = 0, '',
+                  CONCAT(FLOOR(TIMESTAMPDIFF(DAY, p.birthdate, CURRENT_DATE()) % 30.4375), ' D'))
+           )                                 AS 'Age',
+       pa.value                              AS 'Phone Number',
+       pa_nid.value                          AS 'NID',
+       CONCAT(
+               IF(pad.address1 IS NULL, '', CONCAT((CONCAT((pad.address1), ',')), ' ')),
+               IF(pad.address6 IS NULL, '', CONCAT((CONCAT((pad.address6))), ' ')),
+               IF(pad.postal_code IS NULL, '', CONCAT((CONCAT('- ', (pad.postal_code), ',')), ' ')),
+               IF(pad.address5 IS NULL, '', CONCAT((CONCAT((pad.address5), ',')), ' ')),
+               IF(pad.county_district IS NULL, '',
+                  CONCAT((CONCAT((pad.county_district), ',')), ' ')),
+               IF(pad.state_province IS NULL, '', CONCAT((CONCAT((pad.state_province))), ' '))
+           )                                 AS 'Address',
+       CONCAT(
+               IF(doctor.given_name IS NULL, '', CONCAT((doctor.given_name), ' ')),
+               IF(doctor.middle_name IS NULL, '', CONCAT((doctor.middle_name), ' ')),
+               IF(doctor.family_name IS NULL, '', CONCAT((doctor.family_name), ' '))
+           )                                 AS 'Admission Request By',
+       CONCAT(
+               IF(admittedby.given_name IS NULL, '', CONCAT((admittedby.given_name), ' ')),
+               IF(admittedby.middle_name IS NULL, '', CONCAT((admittedby.middle_name), ' ')),
+               IF(admittedby.family_name IS NULL, '', CONCAT((admittedby.family_name), ' '))
+           )                                 AS 'Admitted By',
+       CONCAT(bed.Ward, '(', bed.Floor, ')') AS 'Ward'
+FROM bed_patient_assignment_map bpatient
+         INNER JOIN encounter e ON bpatient.encounter_id = e.encounter_id
+         INNER JOIN encounter_type et ON e.encounter_type = et.encounter_type_id
+         INNER JOIN person_name pn ON bpatient.patient_id = pn.person_id
+         INNER JOIN person p ON bpatient.patient_id = p.person_id
+         LEFT JOIN person_address AS pad ON p.person_id = pad.person_id
+         LEFT JOIN patient_identifier pid ON bpatient.patient_id = pid.patient_id
+         LEFT JOIN person_attribute AS pa ON p.person_id = pa.person_id
+    AND pa.person_attribute_type_id = (
+        SELECT pat.person_attribute_type_id
+        FROM person_attribute_type AS pat
+        WHERE pat.name = 'phoneNumber'
+    )
+         LEFT JOIN person_attribute AS pa_nid ON p.person_id = pa_nid.person_id
+    AND pa_nid.person_attribute_type_id = (
+        SELECT pat_nid.person_attribute_type_id
+        FROM person_attribute_type AS pat_nid
+        WHERE pat_nid.name = 'nationalId'
+    )
+         INNER JOIN users u ON e.creator = u.user_id AND u.retired = 0
+         INNER JOIN obs o ON e.patient_id = o.person_id
+    AND o.value_coded IN (
+        SELECT cv.concept_id
+        FROM concept_view cv
+        WHERE concept_full_name = 'Admit Patient'
+    )
+         INNER JOIN users a_request_u ON o.creator = a_request_u.user_id AND u.retired = 0
+         INNER JOIN person_name doctor ON a_request_u.person_id = doctor.person_id
+         INNER JOIN users adm_user ON bpatient.creator = adm_user.user_id
+         INNER JOIN person_name admittedby ON adm_user.person_id = admittedby.person_id
+         LEFT JOIN obs dis_o ON bpatient.patient_id = dis_o.person_id
+    AND dis_o.voided = 0
+    AND dis_o.value_coded IN (
+        SELECT cv.concept_id
+        FROM concept_view cv
+        WHERE concept_full_name = 'Discharge Patient'
+    )
+         LEFT JOIN users dis_req_u ON dis_o.creator = dis_req_u.user_id
+         LEFT JOIN person_name dis_req_name ON dis_req_u.person_id = dis_req_name.person_id
+         LEFT JOIN (
+    SELECT e.patient_id   AS 'Id',
+           e.date_created AS 'Discharge Time',
+           CONCAT(
+                   IF(dis_name.given_name IS NULL, '', CONCAT((dis_name.given_name), ' ')),
+                   IF(dis_name.middle_name IS NULL, '', CONCAT((dis_name.middle_name), ' ')),
+                   IF(dis_name.family_name IS NULL, '', CONCAT((dis_name.family_name), ' '))
+               )          AS 'Discharged By'
+    FROM encounter e
+             INNER JOIN users dis_u ON e.creator = dis_u.user_id
+             INNER JOIN person_name dis_name ON dis_u.person_id = dis_name.person_id
+             INNER JOIN encounter_type et ON e.encounter_type = et.encounter_type_id
+    WHERE et.name = 'DISCHARGE'
+) discharge ON bpatient.patient_id = discharge.Id
+         INNER JOIN (
+    SELECT bed_patient_assignment_map_id,
+           bed_id,
+           patient_id
+    FROM bed_patient_assignment_map
+    WHERE bed_patient_assignment_map_id IN (
+        SELECT MAX(bed_patient_assignment_map_id)
+        FROM bed_patient_assignment_map
+        GROUP BY patient_id
+    )
+) latest ON bpatient.patient_id = latest.patient_id
+         INNER JOIN (
+    SELECT floor.name     AS 'Floor',
+           ward.name      AS 'Ward',
+           bed.bed_number AS Bed,
+           bed.bed_id     AS 'id'
+    FROM bed
+             INNER JOIN bed_location_map ON bed.bed_id = bed_location_map.bed_id
+             INNER JOIN location AS ward ON bed_location_map.location_id = ward.location_id
+             INNER JOIN location AS floor ON ward.parent_location = floor.location_id
+) bed ON latest.bed_id = bed.id
+WHERE et.name = 'ADMISSION'
+  AND CAST(bpatient.date_started AS DATE) BETWEEN $P{StartDate} AND $P{EndDate};]]>
+	</queryString>
+	<field name="Admission Time" class="java.time.LocalDateTime">
+		<property name="com.jaspersoft.studio.field.name" value="date_started"/>
+		<property name="com.jaspersoft.studio.field.label" value="Admission Time"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="bed_patient_assignment_map"/>
+	</field>
+	<field name="Patient ID" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="identifier"/>
+		<property name="com.jaspersoft.studio.field.label" value="Patient ID"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="patient_identifier"/>
+	</field>
+	<field name="Patient Name" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Patient Name"/>
+		<property name="com.jaspersoft.studio.field.label" value="Patient Name"/>
+	</field>
+	<field name="Gender" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="gender"/>
+		<property name="com.jaspersoft.studio.field.label" value="Gender"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="person"/>
+	</field>
+	<field name="Age" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Age"/>
+		<property name="com.jaspersoft.studio.field.label" value="Age"/>
+	</field>
+	<field name="Phone Number" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="value"/>
+		<property name="com.jaspersoft.studio.field.label" value="Phone Number"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="person_attribute"/>
+	</field>
+	<field name="NID" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="value"/>
+		<property name="com.jaspersoft.studio.field.label" value="NID"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="person_attribute"/>
+	</field>
+	<field name="Address" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Address"/>
+		<property name="com.jaspersoft.studio.field.label" value="Address"/>
+	</field>
+	<field name="Admission Request By" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Admission Request By"/>
+		<property name="com.jaspersoft.studio.field.label" value="Admission Request By"/>
+	</field>
+	<field name="Admitted By" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Admitted By"/>
+		<property name="com.jaspersoft.studio.field.label" value="Admitted By"/>
+	</field>
+	<field name="Ward" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="Ward"/>
+		<property name="com.jaspersoft.studio.field.label" value="Ward"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="96" splitType="Stretch">
+			<image hAlign="Center">
+				<reportElement x="0" y="0" width="780" height="95" uuid="9590d369-442d-4393-ac73-62edd8f63b04">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA["/Gurudaspur report.png"]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="45" splitType="Stretch">
+			<staticText>
+				<reportElement x="80" y="-1" width="600" height="22" backcolor="#CCCCCC" uuid="8ad1127e-377a-41f7-b5f8-4230046cc0f8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[IPD Admitted Patient Details]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="158" y="20" width="80" height="20" uuid="4339121b-31b8-4d25-bd0d-7b5d2b00e8b7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd hh:mm a">
+				<reportElement x="240" y="20" width="138" height="20" uuid="f187c1d1-489f-4b30-b03b-9b9681117110"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{StartDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="384" y="20" width="74" height="20" uuid="c031c56c-8635-43ac-9cd5-7a3c4a9a4fa5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd hh:mm a">
+				<reportElement x="460" y="20" width="140" height="20" uuid="657d383a-74dd-4d55-be59-0cce18b155fb"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{EndDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="30" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="110" height="30" backcolor="#C0C0C0" uuid="1118a8cd-ef82-49ef-9e05-817f1c79a758">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="114d6d65-b132-4c3c-a36a-45e8b9d81c5d"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Admission Time]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="110" y="0" width="64" height="30" backcolor="#C0C0C0" uuid="3bf706de-5d7f-4616-8cc4-f0670d01a6dc">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="11476a39-57af-4954-b372-0a9535c7e086"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Patient ID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="174" y="0" width="72" height="30" backcolor="#C0C0C0" uuid="94841e65-2220-40f5-9d3c-c29460f5eca2">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="c79ff43c-ec03-4af1-b828-81e1016d6e58"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Patient Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="246" y="0" width="44" height="30" backcolor="#C0C0C0" uuid="f1670ae3-0d63-4d0c-b89a-53fe7127da10">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="6b179493-c7fc-474d-a687-bdb299959df6"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Gender]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="290" y="0" width="80" height="30" backcolor="#C0C0C0" uuid="72acc5a6-b5d0-4daa-9341-348e316c173f">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="249484f4-3438-49e5-9954-6d1d07f13fd3"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Age]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="370" y="0" width="72" height="30" backcolor="#C0C0C0" uuid="938d1598-f5c5-46a2-ba4d-c4eeb31e5523">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="3816a59a-7f3c-4bba-a9c0-c1071b82cc65"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Phone
+Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="442" y="0" width="50" height="30" backcolor="#C0C0C0" uuid="14e14ccb-acc9-4151-948f-f8dd82a5bd78">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="ad67ad6a-91aa-4437-adbd-bb890c061fc7"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[NID]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="492" y="0" width="72" height="30" backcolor="#C0C0C0" uuid="74ca89ab-9101-4163-9257-15aec90d91fe">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="4e44d646-a38c-49ca-ad78-ecdf9d40e3eb"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Address]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="564" y="0" width="72" height="30" backcolor="#C0C0C0" uuid="00027881-7604-4e8f-a76d-a70e8af998d1">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="6f8d2bbb-dc84-42d2-86ed-83d057a96046"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Admission Request By]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="636" y="0" width="72" height="30" backcolor="#C0C0C0" uuid="085f8979-12e3-4dd1-bfcb-6994b66b2ea8">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="39b56272-e9b6-48a9-8e24-8cd45f380078"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Admitted By]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="708" y="0" width="72" height="30" backcolor="#C0C0C0" uuid="7cee08a8-c6ef-4250-a5aa-64bb98470e68">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="529309d9-ef90-4b62-8c08-3fd4a85ca031"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Ward]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="110" height="20" uuid="0c3c6b2d-af9a-4aea-9eaf-4b7369aab9ce">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="114d6d65-b132-4c3c-a36a-45e8b9d81c5d"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Admission Time}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="110" y="0" width="64" height="20" uuid="fb112ea3-0732-4cf4-b483-62377a88e432">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="11476a39-57af-4954-b372-0a9535c7e086"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Patient ID}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="174" y="0" width="72" height="20" uuid="641c1c26-8f2c-4757-b3b9-7f6f820af8b5">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="c79ff43c-ec03-4af1-b828-81e1016d6e58"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Patient Name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="246" y="0" width="44" height="20" uuid="9d5300ac-6acc-4436-9b8b-8c9d2f980639">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="6b179493-c7fc-474d-a687-bdb299959df6"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Gender}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="290" y="0" width="80" height="20" uuid="fba5a962-940c-4adf-8601-a1becc81ee3d">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="249484f4-3438-49e5-9954-6d1d07f13fd3"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Age}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="370" y="0" width="72" height="20" uuid="1b3c1d9c-bae2-4b21-bdb2-b457f146afd5">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="3816a59a-7f3c-4bba-a9c0-c1071b82cc65"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Phone Number}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="442" y="0" width="50" height="20" uuid="fd9f6a94-8e98-4c48-ab91-07477f36a027">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="ad67ad6a-91aa-4437-adbd-bb890c061fc7"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{NID}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="492" y="0" width="72" height="20" uuid="bfa6da96-f1fe-4cd8-9f70-880b604b3dab">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="4e44d646-a38c-49ca-ad78-ecdf9d40e3eb"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Address}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="564" y="0" width="72" height="20" uuid="966efd28-a57f-4661-ac28-49a6cb0c8762">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="6f8d2bbb-dc84-42d2-86ed-83d057a96046"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Admission Request By}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="636" y="0" width="72" height="20" uuid="36a14d14-cec5-48aa-9d1e-c8cb2839b8fb">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="39b56272-e9b6-48a9-8e24-8cd45f380078"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Admitted By}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="708" y="0" width="72" height="20" uuid="68ddbb22-a9e5-476f-a999-bbc48f498a44">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="529309d9-ef90-4b62-8c08-3fd4a85ca031"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Ward}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="56" splitType="Stretch">
+			<staticText>
+				<reportElement x="178" y="12" width="199" height="18" uuid="76303606-993f-4ffa-8446-69d3b81c5367"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Generated On : ]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd  hh:mm:ss a">
+				<reportElement x="380" y="12" width="198" height="18" uuid="50eb9318-0fb4-44be-bf3a-cd110f400b36"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="755" y="36" width="25" height="15" uuid="a1ee9e92-8a20-4002-b096-6be8305440bd"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="704" y="36" width="50" height="15" uuid="579b7400-38ac-4434-a4aa-ffcf16693465"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[Page No -]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="34" width="780" height="1" uuid="3ede9c41-69d4-4c66-9841-5a7e8efe69fc"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="36" width="230" height="15" uuid="c3684461-5e8f-422f-a54e-f66225a0e648"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Powered By : Crystal Technology Bangladesh Ltd.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="378" y="36" width="150" height="15" uuid="df9736e3-2a18-4be0-8836-8622a5b374c9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[website : crystaltechbd.com]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>

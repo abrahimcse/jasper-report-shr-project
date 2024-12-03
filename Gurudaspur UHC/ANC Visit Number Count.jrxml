@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.0.final using JasperReports Library version 6.21.0-4f56c4f36cd19e17675219a9ac4692d5f0f13b06  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ANC Visit Number Count" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="6fbe4209-2374-407c-9509-d243c5f4907d">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="182"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="814"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="SHR-Project"/>
+	<property name="ireport.jasperserver.url" value="http://192.168.1.220:8080/jasperserver/"/>
+	<property name="ireport.jasperserver.user" value="ctech"/>
+	<property name="ireport.jasperserver.report.resource" value="/SHR_Project_Report/Gurudaspur_UHC/ANC_Visit_Number_Count_files/main_jrxml"/>
+	<property name="ireport.jasperserver.reportUnit" value="/SHR_Project_Report/Gurudaspur_UHC/ANC_Visit_Number_Count"/>
+	<parameter name="StartDate" class="java.sql.Timestamp"/>
+	<parameter name="EndDate" class="java.sql.Timestamp"/>
+	<queryString language="SQL">
+		<![CDATA[select if(cv2.concept_short_name <=> null, 'Total', cv2.concept_short_name) as 'ANC Visit Number',
+       sum(IF(p.gender = 'F', 1, 0))                                        as Female,
+       sum(IF(p.gender = 'O', 1, 0))                                        as Other,
+       sum(IF(p.gender in ('F', 'M', 'O'), 1, 0))                           as Total
+from (select o.person_id, o.obs_datetime, o.concept_id, o.value_coded, o.creator, o.voided
+      from obs o
+      where o.voided = 0
+        and o.concept_id in
+            (select cv.concept_id from concept_view cv where concept_full_name = 'ANC Visit Number')
+        and cast(o.obs_datetime as DATE) between $P{StartDate} AND $P{EndDate}
+      group by o.person_id, DATE_FORMAT(o.obs_datetime, '%d-%m-%Y')) obs_value
+         inner join person p on obs_value.person_id = p.person_id and p.voided = 0
+         inner join concept_view cv2 on cv2.concept_id = obs_value.value_coded
+group by cv2.concept_short_name
+with rollup;]]>
+	</queryString>
+	<field name="ANC Visit Number" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="ANC Visit Number"/>
+		<property name="com.jaspersoft.studio.field.label" value="ANC Visit Number"/>
+	</field>
+	<field name="Female" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="Female"/>
+		<property name="com.jaspersoft.studio.field.label" value="Female"/>
+	</field>
+	<field name="Other" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="Other"/>
+		<property name="com.jaspersoft.studio.field.label" value="Other"/>
+	</field>
+	<field name="Total" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="Total"/>
+		<property name="com.jaspersoft.studio.field.label" value="Total"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="71" splitType="Stretch">
+			<image>
+				<reportElement x="0" y="0" width="555" height="70" uuid="9590d369-442d-4393-ac73-62edd8f63b04">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA["/Gurudaspur report.png"]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="45" splitType="Stretch">
+			<staticText>
+				<reportElement x="80" y="-1" width="400" height="22" backcolor="#CCCCCC" uuid="8ad1127e-377a-41f7-b5f8-4230046cc0f8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ANC Visit Number Count]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="60" y="20" width="80" height="20" uuid="4339121b-31b8-4d25-bd0d-7b5d2b00e8b7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd hh:mm a">
+				<reportElement x="142" y="20" width="138" height="20" uuid="f187c1d1-489f-4b30-b03b-9b9681117110"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{StartDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="285" y="20" width="74" height="20" uuid="c031c56c-8635-43ac-9cd5-7a3c4a9a4fa5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd hh:mm a">
+				<reportElement x="361" y="20" width="140" height="20" uuid="657d383a-74dd-4d55-be59-0cce18b155fb"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{EndDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="141" height="20" backcolor="#C0C0C0" uuid="69f2ff17-386f-4357-b891-087ae282e6ef">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="76f7929b-d889-4064-8a8b-96c0fadd01ea"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[ANC Visit Number]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="141" y="0" width="138" height="20" backcolor="#C0C0C0" uuid="e680fc3b-1b6a-46c9-9e61-697dad476e0d">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="1ee4de00-1cf8-4b06-82b6-41719b15f01e"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Female]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="279" y="0" width="138" height="20" backcolor="#C0C0C0" uuid="18bafc7f-2f19-453f-ab49-f79a7f604aa9">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="c23736ef-600d-402f-be58-2d1c7894d380"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Other]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="417" y="0" width="138" height="20" backcolor="#C0C0C0" uuid="c576837c-c071-42b3-8d99-9832738201dc">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="827e6d39-9dd1-4e81-8098-3bb46e976b5a"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="141" height="20" uuid="f7d1f6a6-d20d-4a61-82db-508688f18942">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="76f7929b-d889-4064-8a8b-96c0fadd01ea"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{ANC Visit Number}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="141" y="0" width="138" height="20" uuid="29e04750-ede4-42a8-a931-92f121a094b6">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="1ee4de00-1cf8-4b06-82b6-41719b15f01e"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Female}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="279" y="0" width="138" height="20" uuid="0c248326-7a8a-43b8-ab15-c3e3f8bbfd78">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="c23736ef-600d-402f-be58-2d1c7894d380"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Other}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="417" y="0" width="138" height="20" uuid="9f49ebfb-fe96-426e-bbca-00ee0452cc41">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="827e6d39-9dd1-4e81-8098-3bb46e976b5a"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Total}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="56" splitType="Stretch">
+			<staticText>
+				<reportElement x="80" y="12" width="199" height="18" uuid="76303606-993f-4ffa-8446-69d3b81c5367"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Generated On : ]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd  hh:mm:ss a">
+				<reportElement x="282" y="12" width="198" height="18" uuid="50eb9318-0fb4-44be-bf3a-cd110f400b36"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="531" y="36" width="25" height="15" uuid="a1ee9e92-8a20-4002-b096-6be8305440bd"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="480" y="36" width="50" height="15" uuid="579b7400-38ac-4434-a4aa-ffcf16693465"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[Page No -]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="33" width="555" height="1" uuid="3ede9c41-69d4-4c66-9841-5a7e8efe69fc"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="36" width="230" height="15" uuid="c3684461-5e8f-422f-a54e-f66225a0e648"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Powered By : Crystal Technology Bangladesh Ltd.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="247" y="36" width="150" height="15" uuid="df9736e3-2a18-4be0-8836-8622a5b374c9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[website : crystaltechbd.com]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>
