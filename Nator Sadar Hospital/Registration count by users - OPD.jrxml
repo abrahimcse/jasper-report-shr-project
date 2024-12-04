@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.0.final using JasperReports Library version 6.21.0-4f56c4f36cd19e17675219a9ac4692d5f0f13b06  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Registration count by users - OPD" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="f45d3592-f045-4534-907e-24fb3e264284">
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w1" value="165"/>
+	<property name="com.jaspersoft.studio.data.sql.SQLQueryDesigner.sash.w2" value="831"/>
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="SHR-Project"/>
+	<property name="ireport.jasperserver.url" value="http://192.168.1.220:8080/jasperserver/"/>
+	<property name="ireport.jasperserver.user" value="ctech"/>
+	<property name="ireport.jasperserver.report.resource" value="/SHR_Project_Report/Nator_Sadar_hospital/Registration_count_by_users___OPD_files/main_jrxml"/>
+	<property name="ireport.jasperserver.reportUnit" value="/SHR_Project_Report/Nator_Sadar_hospital/Registration_count_by_users___OPD"/>
+	<parameter name="StartDate" class="java.sql.Timestamp"/>
+	<parameter name="EndDate" class="java.sql.Timestamp"/>
+	<queryString language="SQL">
+		<![CDATA[select if(user.user_name <=> null, 'Total', user.user_name) as 'User Name',
+       SUM(IF(obs_value.value_coded in (select cv.concept_id
+                                        from concept_view cv
+                                        where concept_full_name in
+                                              ('Fee Category, General', 'Fee Category, Police Case')), 1,
+              0))                                           AS 'Paid Patient',
+       SUM(IF(obs_value.value_coded in (select cv.concept_id
+                                        from concept_view cv
+                                        where concept_full_name not in
+                                              ('Fee Category, General', 'Fee Category, Police Case')), 1,
+              0))                                           AS 'Free Patient',
+       COUNT(obs_value.value_coded)                         AS 'Total Patient',
+       SUM(IF(obs_value.value_coded in (select cv.concept_id
+                                        from concept_view cv
+                                        where concept_full_name in
+                                              ('Fee Category, General', 'Fee Category, Police Case')), 1, 0)) *
+       5                                                    AS 'Total Collection (Tk.)'
+from (select o.person_id, o.encounter_id, o.obs_datetime, o.value_coded, o.creator
+      from obs o
+      where o.voided = 0
+        and o.concept_id in (select cv.concept_id from concept_view cv where concept_full_name = 'Fee Category')
+        and cast(o.obs_datetime as DATE) between '#startDate#' AND '#endDate#'
+      group by o.person_id, DATE_FORMAT(o.obs_datetime, "%d-%m-%Y")) obs_value
+         inner join
+     (select o.person_id, o.encounter_id, o.obs_datetime, o.value_complex, o.creator
+      from obs o
+      where o.voided = 0
+        and o.concept_id in
+            (select cv.concept_id from concept_view cv where concept_full_name = 'Opd Consultation Room')
+        and cast(o.obs_datetime as DATE) between '#startDate#' AND '#endDate#'
+      group by o.person_id, DATE_FORMAT(o.obs_datetime, "%d-%m-%Y")) obs_complex
+     on obs_value.encounter_id = obs_complex.encounter_id
+         inner join users u on u.user_id = obs_value.creator
+         inner join (select pn.person_id                                                          as id,
+                            CONCAT(IF(pn.given_name IS NULL, '', CONCAT((pn.given_name), ' ')),
+                                   IF(pn.middle_name IS NULL, '', CONCAT((pn.middle_name), ' ')),
+                                   IF(pn.family_name IS NULL, '', CONCAT((pn.family_name), ' '))) AS 'user_name'
+                     from person_name pn
+                     group by pn.person_id) user on u.person_id = user.id
+where obs_complex.value_complex not in (select location_id
+                                        from location
+                                        where name in ('Room No : 00 (Emergency)'))
+group by user.user_name
+with rollup;]]>
+	</queryString>
+	<field name="User Name" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="User Name"/>
+		<property name="com.jaspersoft.studio.field.label" value="User Name"/>
+	</field>
+	<field name="Paid Patient" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="Paid Patient"/>
+		<property name="com.jaspersoft.studio.field.label" value="Paid Patient"/>
+	</field>
+	<field name="Free Patient" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="Free Patient"/>
+		<property name="com.jaspersoft.studio.field.label" value="Free Patient"/>
+	</field>
+	<field name="Total Patient" class="java.lang.Long">
+		<property name="com.jaspersoft.studio.field.name" value="Total Patient"/>
+		<property name="com.jaspersoft.studio.field.label" value="Total Patient"/>
+	</field>
+	<field name="Total Collection (Tk.)" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="Total Collection (Tk.)"/>
+		<property name="com.jaspersoft.studio.field.label" value="Total Collection (Tk.)"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="71" splitType="Stretch">
+			<image hAlign="Center" vAlign="Middle">
+				<reportElement x="0" y="0" width="555" height="70" uuid="9590d369-442d-4393-ac73-62edd8f63b04">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<imageExpression><![CDATA["/Nator sadar report.png"]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="45" splitType="Stretch">
+			<staticText>
+				<reportElement x="94" y="-1" width="370" height="22" backcolor="#CCCCCC" uuid="8ad1127e-377a-41f7-b5f8-4230046cc0f8"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Registration count by users - OPD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="60" y="20" width="80" height="20" uuid="4339121b-31b8-4d25-bd0d-7b5d2b00e8b7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Start Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd hh:mm a">
+				<reportElement x="142" y="20" width="138" height="20" uuid="f187c1d1-489f-4b30-b03b-9b9681117110"/>
+				<textElement verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{StartDate}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="285" y="20" width="74" height="20" uuid="c031c56c-8635-43ac-9cd5-7a3c4a9a4fa5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[End Date :]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd hh:mm a">
+				<reportElement x="361" y="20" width="140" height="20" uuid="657d383a-74dd-4d55-be59-0cce18b155fb"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="12"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{EndDate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="f91b6a40-28c9-4026-8729-027612037e65">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="9b1c2e13-ba3f-4bf7-afec-195ee9ecf022"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[User Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="111" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="acd15a7f-0c41-4005-bcf5-a4a0b2ac67db">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="54f82ab3-f3d3-42c4-87bf-dc976299ddae"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Paid Patient]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="222" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="f290f390-8816-4e23-bf3b-f20fc412117b">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="411e1bfd-31a3-4783-8ab3-21fef2906aad"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Free Patient]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="333" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="d945849f-93df-4db1-9126-dc03a4714deb">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="99fd574c-7390-4379-8cbd-4782875b7ec2"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Patient]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="444" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="bc86f759-b5f9-47f6-b63b-9cd5285345d8">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="8f9154be-3893-4a64-a421-5bc378749b4c"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Collection (Tk.)]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="111" height="20" uuid="532d1967-1a28-4b64-b8d0-22e84509921a">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="9b1c2e13-ba3f-4bf7-afec-195ee9ecf022"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{User Name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="111" y="0" width="111" height="20" uuid="49b456fb-d6ca-4b57-8fa7-1dba0808516f">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="54f82ab3-f3d3-42c4-87bf-dc976299ddae"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Paid Patient}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="222" y="0" width="111" height="20" uuid="46f0c8e7-6cec-4661-a730-5f56d478085b">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="411e1bfd-31a3-4783-8ab3-21fef2906aad"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Free Patient}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="333" y="0" width="111" height="20" uuid="52a86e2e-94a8-4f0a-b8c0-8f5be8ac68a4">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="99fd574c-7390-4379-8cbd-4782875b7ec2"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Total Patient}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="444" y="0" width="111" height="20" uuid="37aab460-18e9-4088-b625-4c0df37103cf">
+					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="8f9154be-3893-4a64-a421-5bc378749b4c"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{Total Collection (Tk.)}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="56" splitType="Stretch">
+			<staticText>
+				<reportElement x="80" y="12" width="199" height="18" uuid="76303606-993f-4ffa-8446-69d3b81c5367"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Report Generated On : ]]></text>
+			</staticText>
+			<textField pattern="yyyy-MM-dd  hh:mm:ss a">
+				<reportElement x="282" y="12" width="198" height="18" uuid="50eb9318-0fb4-44be-bf3a-cd110f400b36"/>
+				<textElement>
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="531" y="36" width="25" height="15" uuid="a1ee9e92-8a20-4002-b096-6be8305440bd"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="480" y="36" width="50" height="15" uuid="579b7400-38ac-4434-a4aa-ffcf16693465"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="false" isItalic="false"/>
+				</textElement>
+				<text><![CDATA[Page No -]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="33" width="555" height="1" uuid="3ede9c41-69d4-4c66-9841-5a7e8efe69fc"/>
+			</line>
+			<staticText>
+				<reportElement x="0" y="36" width="230" height="15" uuid="c3684461-5e8f-422f-a54e-f66225a0e648"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle"/>
+				<text><![CDATA[Powered By : Crystal Technology Bangladesh Ltd.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="247" y="36" width="150" height="15" uuid="df9736e3-2a18-4be0-8836-8622a5b374c9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[website : crystaltechbd.com]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>
