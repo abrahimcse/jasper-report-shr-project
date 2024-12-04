@@ -33,7 +33,7 @@ from (select o.person_id, o.encounter_id, o.obs_datetime, o.value_coded, o.creat
       from obs o
       where o.voided = 0
         and o.concept_id in (select cv.concept_id from concept_view cv where concept_full_name = 'Fee Category')
-        and cast(o.obs_datetime as DATE) between '#startDate#' AND '#endDate#'
+        and cast(o.obs_datetime as DATE) between $P{StartDate} AND $P{EndDate}
       group by o.person_id, DATE_FORMAT(o.obs_datetime, "%d-%m-%Y")) obs_value
          inner join
      (select o.person_id, o.encounter_id, o.obs_datetime, o.value_complex, o.creator
@@ -41,7 +41,7 @@ from (select o.person_id, o.encounter_id, o.obs_datetime, o.value_coded, o.creat
       where o.voided = 0
         and o.concept_id in
             (select cv.concept_id from concept_view cv where concept_full_name = 'Opd Consultation Room')
-        and cast(o.obs_datetime as DATE) between '#startDate#' AND '#endDate#'
+        and cast(o.obs_datetime as DATE) between $P{StartDate} AND $P{EndDate}
       group by o.person_id, DATE_FORMAT(o.obs_datetime, "%d-%m-%Y")) obs_complex
      on obs_value.encounter_id = obs_complex.encounter_id
          inner join users u on u.user_id = obs_value.creator
@@ -147,7 +147,7 @@ with rollup;]]>
 				<text><![CDATA[User Name]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="111" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="acd15a7f-0c41-4005-bcf5-a4a0b2ac67db">
+				<reportElement mode="Opaque" x="111" y="0" width="98" height="20" backcolor="#C0C0C0" uuid="acd15a7f-0c41-4005-bcf5-a4a0b2ac67db">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="54f82ab3-f3d3-42c4-87bf-dc976299ddae"/>
 				</reportElement>
 				<box>
@@ -162,7 +162,7 @@ with rollup;]]>
 				<text><![CDATA[Paid Patient]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="222" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="f290f390-8816-4e23-bf3b-f20fc412117b">
+				<reportElement mode="Opaque" x="209" y="0" width="98" height="20" backcolor="#C0C0C0" uuid="f290f390-8816-4e23-bf3b-f20fc412117b">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="411e1bfd-31a3-4783-8ab3-21fef2906aad"/>
 				</reportElement>
 				<box>
@@ -177,7 +177,7 @@ with rollup;]]>
 				<text><![CDATA[Free Patient]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="333" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="d945849f-93df-4db1-9126-dc03a4714deb">
+				<reportElement mode="Opaque" x="307" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="d945849f-93df-4db1-9126-dc03a4714deb">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="99fd574c-7390-4379-8cbd-4782875b7ec2"/>
 				</reportElement>
 				<box>
@@ -192,7 +192,7 @@ with rollup;]]>
 				<text><![CDATA[Total Patient]]></text>
 			</staticText>
 			<staticText>
-				<reportElement mode="Opaque" x="444" y="0" width="111" height="20" backcolor="#C0C0C0" uuid="bc86f759-b5f9-47f6-b63b-9cd5285345d8">
+				<reportElement mode="Opaque" x="418" y="0" width="132" height="20" backcolor="#C0C0C0" uuid="bc86f759-b5f9-47f6-b63b-9cd5285345d8">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="8f9154be-3893-4a64-a421-5bc378749b4c"/>
 				</reportElement>
 				<box>
@@ -224,7 +224,7 @@ with rollup;]]>
 				<textFieldExpression><![CDATA[$F{User Name}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="111" y="0" width="111" height="20" uuid="49b456fb-d6ca-4b57-8fa7-1dba0808516f">
+				<reportElement x="111" y="0" width="98" height="20" uuid="49b456fb-d6ca-4b57-8fa7-1dba0808516f">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="54f82ab3-f3d3-42c4-87bf-dc976299ddae"/>
 				</reportElement>
 				<box>
@@ -237,7 +237,7 @@ with rollup;]]>
 				<textFieldExpression><![CDATA[$F{Paid Patient}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="222" y="0" width="111" height="20" uuid="46f0c8e7-6cec-4661-a730-5f56d478085b">
+				<reportElement x="209" y="0" width="98" height="20" uuid="46f0c8e7-6cec-4661-a730-5f56d478085b">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="411e1bfd-31a3-4783-8ab3-21fef2906aad"/>
 				</reportElement>
 				<box>
@@ -250,7 +250,7 @@ with rollup;]]>
 				<textFieldExpression><![CDATA[$F{Free Patient}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="333" y="0" width="111" height="20" uuid="52a86e2e-94a8-4f0a-b8c0-8f5be8ac68a4">
+				<reportElement x="307" y="0" width="111" height="20" uuid="52a86e2e-94a8-4f0a-b8c0-8f5be8ac68a4">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="99fd574c-7390-4379-8cbd-4782875b7ec2"/>
 				</reportElement>
 				<box>
@@ -263,7 +263,7 @@ with rollup;]]>
 				<textFieldExpression><![CDATA[$F{Total Patient}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="444" y="0" width="111" height="20" uuid="37aab460-18e9-4088-b625-4c0df37103cf">
+				<reportElement x="418" y="0" width="132" height="20" uuid="37aab460-18e9-4088-b625-4c0df37103cf">
 					<property name="com.jaspersoft.studio.spreadsheet.connectionID" value="8f9154be-3893-4a64-a421-5bc378749b4c"/>
 				</reportElement>
 				<box>
